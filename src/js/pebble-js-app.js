@@ -50,7 +50,8 @@ function updateWeather() {
 	if (options.gps === 1) {
 		navigator.geolocation.getCurrentPosition(locationSuccess,locationError,locationOptions);
 	} else {
-		getWeather(options.location, 'c'); // always celsius
+		var settings = JSON.parse(localStorage['Flip Weather']);
+		getWeather(options.location, settings.units == 1 ? 'c' : 'f');
 	}
 }
 
@@ -64,7 +65,8 @@ function sendError(){
 
 function locationSuccess(pos) {
 	console.log("locationSuccess");
-	getWeather(pos.coords.latitude+','+pos.coords.longitude, 'c');
+	var settings = JSON.parse(localStorage['Flip Weather']);
+	getWeather(pos.coords.latitude+','+pos.coords.longitude, settings.units == 1 ? 'c' : 'f');
 }
 
 function locationError(err) {
@@ -72,10 +74,10 @@ function locationError(err) {
 	sendError();
 }
 
-Pebble.addEventListener("ready", function(e) {
-	console.log("ready");
-	updateWeather();
-});
+// Pebble.addEventListener("ready", function(e) {
+// 	console.log("ready");
+// 	updateWeather();
+// });
 
 Pebble.addEventListener("appmessage", function(e) {
 	updateWeather();

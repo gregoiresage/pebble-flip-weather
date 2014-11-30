@@ -3,18 +3,23 @@
   "shortName": "Flip Weather",
   "longName": "Flip Weather",
   "companyName": "Gregoire Sage",
-  "versionCode": 2,
-  "versionLabel": "0.2",
+  "versionCode": 5,
+  "versionLabel": "0.5",
   "watchapp": {
     "watchface": true
   },
   "capabilities": [
-    "location"
+    "location",
+    "configurable"
   ],
   "appKeys": {
     "temperature":0,
     "weathercode":1,
-    "cityname":2
+    "cityname":2,
+
+    "language": 10,
+    "units": 11,
+    "interval": 12
   },
   "resources": {
     "media": [
@@ -173,6 +178,43 @@
       {"type": "png", "name": "IMAGE_BW_32", "file": "images/weather icons/32.png"},
 
       {"type": "png", "name": "IMAGE_BW_NA", "file": "images/weather icons/na.png"}
+    ]
+  },
+  "preferences": {
+    "embedded": true,
+    "debug": false,
+    "url": "http://wiki.pebble-autoconfig.googlecode.com/git/example/autoconfig.html",
+    "description": "This page is used to configure the <strong>watchface</strong>. Fill in the form and press <em>Save</em> to transfer the settings to your watch.",
+    "items": [
+      {
+        "name": "language",
+        "title": "Language",
+        "type": "enum",
+        "choices": {
+                "ENGLISH": "English",
+                "FRENCH": "Francais",
+                "SPANISH": "Espanol"
+        },
+        "default": 0
+      },
+      {
+        "name": "units",
+        "title": "Units",
+        "type": "enum",
+        "choices": {
+          "F": "Imperial (F)",
+          "C": "Metric (C)"
+        },
+        "default": 0
+      },
+      {
+        "name": "interval",
+        "title": "Update interval: (minutes)",
+        "type": "integer",
+        "min": 15,
+        "max": 180,
+        "default": 30
+      }
     ]
   }
 }

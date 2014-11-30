@@ -1,5 +1,10 @@
 #include <pebble.h>
 #include "flip_layer.h"
+#include "autoconfig.h"
+
+#define TEMPERATURE_KEY 0
+#define WEATHERCODE_KEY 1
+#define CITYNAME_KEY    2
 
 static Window *window;
 
@@ -213,6 +218,12 @@ int WEATHER_IMAGE_RESOURCE[NUMBER_IMAGE_COUNT] = {
   RESOURCE_ID_IMAGE_BW_3,
 };
 
+static char* MONTHS[][12] = {
+  {"January",   "February", "March",  "April",  "May",  "June",   "July",     "August",   "September",  "October",  "November",   "December"},
+  {"Janvier",   "Février",  "Mars",   "Avril",  "Mai",  "Juin",   "Juillet",  "Août",     "Septembre",  "Octobre",  "Novembre",   "Décembre"},
+  {"Enero",     "Febrero",  "Marzo",  "Abril",  "Mayo", "Junio",  "Julio",    "Agosto",   "Septiembre", "Octubre",  "Noviembre",  "Diciembre"},
+};
+
 static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
   if(clock_is_24h_style()){
     flip_layer_animate_to(layer_number[0], tick_time->tm_hour);
@@ -221,9 +232,10 @@ static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
     flip_layer_animate_to(layer_number[0], tick_time->tm_hour % 12 == 0 ? 12 : tick_time->tm_hour % 12);
   }
   
-  flip_layer_animate_to(layer_number[1], tick_time->tm_min);
+  // flip_layer_animate_to(layer_number[1], tick_time->tm_min);
+  snprintf(date_text, sizeof(date_text), "%s %d", MONTHS[getLanguage()][tick_time->tm_mon],tick_time->tm_mday);
 
-  strftime(date_text, sizeof(date_text), "%B %e", tick_time);
+  // strftime(date_text, sizeof(date_text), "%s %e", MONTHS[getLanguage()][tick_time->tm],tick_time);
   layer_mark_dirty(text_layer_get_layer(text_date_layer));
 }
 
@@ -255,8 +267,6 @@ static void battery_state_handler(BatteryChargeState charge) {
   else {
     battery_image = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_BATTERY_0);
   }
-
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "battery_state_handler:%d", charge.charge_percent);
 
   bitmap_layer_set_bitmap(battery_layer, battery_image);
 }
@@ -292,11 +302,19 @@ static void window_load(Window *window) {
   layer_add_child(window_layer, top_layer);
 
   weather_image = gbitmap_create_with_resource(WEATHER_IMAGE_RESOURCE[0]);
-  weather_layer = bitmap_layer_create(GRect((144-64) / 2, 93, 64, 50));
+  weather_layer = bitmap_layer_create(GRect(0, 93, 72, 50));
   bitmap_layer_set_bitmap(weather_layer, battery_image);
   bitmap_layer_set_alignment(weather_layer, GAlignCenter);
   bitmap_layer_set_compositing_mode(weather_layer,GCompOpAssignInverted);
   layer_add_child(window_layer, bitmap_layer_get_layer(weather_layer));
+
+  text_temp_layer = text_layer_create(GRect(65, 91, 79, 50));
+  text_layer_set_text_color(text_temp_layer, GColorWhite);
+  text_layer_set_text_alignment(text_temp_layer,GTextAlignmentCenter);
+  text_layer_set_background_color(text_temp_layer, GColorClear);
+  text_layer_set_font(text_temp_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_LIGHT));
+  text_layer_set_text(text_temp_layer, temp_text);
+  layer_add_child(window_layer, text_layer_get_layer(text_temp_layer));
 
   bottom_layer = layer_create(bounds);
   layer_set_update_proc(bottom_layer, update_bottom_callback);
@@ -316,13 +334,13 @@ static void window_load(Window *window) {
   text_layer_set_text(text_city_layer, city_text);
   layer_add_child(window_layer, text_layer_get_layer(text_city_layer));
 
-  text_temp_layer = text_layer_create(GRect(4, 144, 50, 20));
-  text_layer_set_text_color(text_temp_layer, GColorBlack);
-  text_layer_set_text_alignment(text_temp_layer,GTextAlignmentLeft);
-  text_layer_set_background_color(text_temp_layer, GColorClear);
-  text_layer_set_font(text_temp_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
-  text_layer_set_text(text_temp_layer, temp_text);
-  layer_add_child(window_layer, text_layer_get_layer(text_temp_layer));
+  // text_temp_layer = text_layer_create(GRect(4, 144, 50, 20));
+  // text_layer_set_text_color(text_temp_layer, GColorBlack);
+  // text_layer_set_text_alignment(text_temp_layer,GTextAlignmentLeft);
+  // text_layer_set_background_color(text_temp_layer, GColorClear);
+  // text_layer_set_font(text_temp_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
+  // text_layer_set_text(text_temp_layer, temp_text);
+  // layer_add_child(window_layer, text_layer_get_layer(text_temp_layer));
 
   text_date_layer = text_layer_create(GRect(4, 144, 138, 20));
   text_layer_set_text_color(text_date_layer, GColorBlack);
@@ -373,10 +391,6 @@ static void window_unload(Window *window) {
   bitmap_layer_destroy(bluetooth_layer);
 }
 
-#define TEMPERATURE_KEY 0
-#define WEATHERCODE_KEY 1
-#define CITYNAME_KEY    2
-
 static void timer_callback(void *data) {
   DictionaryIterator *iter;
   uint8_t value = 1;
@@ -385,17 +399,22 @@ static void timer_callback(void *data) {
   dict_write_end(iter);
   app_message_outbox_send();
   
-  weather_timer = app_timer_register(1000 * 10 * 60 /* milliseconds */, timer_callback, NULL);
+  weather_timer = app_timer_register(getInterval() * 60 * 1000 /* milliseconds */, timer_callback, NULL);
 }
 
 static void cb_in_received_handler(DictionaryIterator *iter, void *context) {
+  autoconfig_in_received_handler(iter, context);
+
   Tuple *code_tuple = dict_find(iter, WEATHERCODE_KEY);
   if(code_tuple){
     int32_t weather_code = code_tuple->value->int32;
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "code:%ld", weather_code);
+    
     if(weather_code != 3200){
         Tuple *temp_tuple = dict_find(iter, TEMPERATURE_KEY);
         if (temp_tuple) {
             int32_t temperature = temp_tuple->value->int32;
+            // temperature = -99;
             snprintf(temp_text, sizeof(temp_text), "%ld°", temperature);
             layer_mark_dirty(text_layer_get_layer(text_temp_layer));
         }
@@ -418,20 +437,22 @@ static void cb_in_received_handler(DictionaryIterator *iter, void *context) {
     weather_image = gbitmap_create_with_resource(WEATHER_IMAGE_RESOURCE[weather_code]);
     bitmap_layer_set_bitmap(weather_layer,  weather_image);
   }
-}
 
-static void cb_out_fail_handler(DictionaryIterator *failed, AppMessageResult reason, void *context) {
-  // APP_LOG(APP_LOG_LEVEL_DEBUG, "cb_out_fail_handler %s", translate_error(reason));
-}
+  if(dict_find(iter, INTERVAL_PKEY) || dict_find(iter, UNITS_PKEY)){
+    app_timer_cancel(weather_timer);
+    weather_timer = app_timer_register(1 * 1000 /* milliseconds */, timer_callback, NULL);
+  }
 
-static void app_message_init() {
-  app_message_register_inbox_received(cb_in_received_handler);
-  app_message_register_outbox_failed(cb_out_fail_handler);
-  app_message_open(APP_MESSAGE_INBOX_SIZE_MINIMUM, APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
+  if(dict_find(iter, LANGUAGE_PKEY)){
+    time_t now = time(NULL);
+    struct tm *tick_time = localtime(&now);
+    handle_minute_tick(tick_time, MINUTE_UNIT);
+  }
 }
 
 static void init(void) {
-  app_message_init();
+  autoconfig_init();
+  
   window = window_create();
   window_set_background_color(window,GColorBlack);
   window_set_window_handlers(window, (WindowHandlers) {
@@ -441,11 +462,15 @@ static void init(void) {
   const bool animated = true;
   window_stack_push(window, animated);
 
+  
+  // Register our custom receive handler which in turn will call Pebble Autoconfigs receive handler
+  app_message_register_inbox_received(cb_in_received_handler);
+
   tick_timer_service_subscribe(MINUTE_UNIT, handle_minute_tick);
   battery_state_service_subscribe(battery_state_handler);
   bluetooth_connection_service_subscribe(bluetooth_connection_handler);
 
-  weather_timer = app_timer_register(10 * 60 * 1000 /* milliseconds */, timer_callback, NULL);
+  weather_timer = app_timer_register(2 * 1000 /* milliseconds */, timer_callback, NULL);
 }
 
 static void deinit(void) {
@@ -455,6 +480,8 @@ static void deinit(void) {
   window_destroy(window);
 
   app_timer_cancel(weather_timer);
+
+  autoconfig_deinit();
 }
 
 int main(void) {
