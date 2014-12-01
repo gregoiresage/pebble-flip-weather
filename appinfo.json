@@ -3,8 +3,8 @@
   "shortName": "Flip Weather",
   "longName": "Flip Weather",
   "companyName": "Gregoire Sage",
-  "versionCode": 6,
-  "versionLabel": "0.6",
+  "versionCode": 7,
+  "versionLabel": "0.7",
   "watchapp": {
     "watchface": true
   },
