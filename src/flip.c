@@ -437,9 +437,9 @@ static void cb_in_received_handler(DictionaryIterator *iter, void *context) {
     bitmap_layer_set_bitmap(weather_layer,  weather_image);
   }
 
-  if(dict_find(iter, INTERVAL_PKEY) || dict_find(iter, UNITS_PKEY)){
+  if(dict_find(iter, INTERVAL_PKEY)){
     app_timer_cancel(weather_timer);
-    weather_timer = app_timer_register(1 * 1000 /* milliseconds */, timer_callback, NULL);
+    weather_timer = app_timer_register(getInterval() * 1000 /* milliseconds */, timer_callback, NULL);
   }
 
   if(dict_find(iter, LANGUAGE_PKEY)){
@@ -461,7 +461,6 @@ static void init(void) {
   const bool animated = true;
   window_stack_push(window, animated);
 
-  
   // Register our custom receive handler which in turn will call Pebble Autoconfigs receive handler
   app_message_register_inbox_received(cb_in_received_handler);
 
@@ -469,7 +468,7 @@ static void init(void) {
   battery_state_service_subscribe(battery_state_handler);
   bluetooth_connection_service_subscribe(bluetooth_connection_handler);
 
-  weather_timer = app_timer_register(2 * 1000 /* milliseconds */, timer_callback, NULL);
+  weather_timer = app_timer_register(getInterval() * 1000 /* milliseconds */, timer_callback, NULL);
 }
 
 static void deinit(void) {

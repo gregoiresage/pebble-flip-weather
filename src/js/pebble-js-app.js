@@ -3,10 +3,6 @@ var locationOptions = {
 	"maximumAge": 30000
 };
 
-var options = JSON.parse(localStorage.getItem('options'));
-if (options === null) 
-	options = { "gps" : 1, "location" : ""};
-
 function getWeather(location, unit) {
 	console.log("getWeather");
 	var now = new Date();
@@ -31,7 +27,7 @@ function getWeather(location, unit) {
 				if (response) {
 					var condition = response.query.results.channel.item.condition;
 					console.log(response.query.results.channel.location.city + " --- Temperature " + condition.temp + " " + condition.code);
-					Pebble.sendAppMessage({
+					MessageQueue.sendAppMessage({
 						"weathercode" : parseInt(condition.code),
 						"temperature" : parseInt(condition.temp),
 						"cityname"	: response.query.results.channel.location.city
@@ -47,17 +43,16 @@ function getWeather(location, unit) {
 
 function updateWeather() {
 	console.log("updateWeather");
-	if (options.gps === 1) {
+	// if (options.gps === 1) {
 		navigator.geolocation.getCurrentPosition(locationSuccess,locationError,locationOptions);
-	} else {
-		var settings = JSON.parse(localStorage['Flip Weather']);
-		getWeather(options.location, settings.units == 1 ? 'c' : 'f');
-	}
+	// } else {
+	// 	getWeather(options.location, autoconfigSettings.units == 1 ? 'c' : 'f');
+	// }
 }
 
 function sendError(){
 	console.log("Error");
-	Pebble.sendAppMessage({
+	MessageQueue.sendAppMessage({
 		"weathercode":3200,
 		"temperature":0
 	});
@@ -65,8 +60,7 @@ function sendError(){
 
 function locationSuccess(pos) {
 	console.log("locationSuccess");
-	var settings = JSON.parse(localStorage['Flip Weather']);
-	getWeather(pos.coords.latitude+','+pos.coords.longitude, settings.units == 1 ? 'c' : 'f');
+	getWeather(pos.coords.latitude+','+pos.coords.longitude, autoconfigSettings.units == 1 ? 'c' : 'f');
 }
 
 function locationError(err) {
@@ -74,10 +68,19 @@ function locationError(err) {
 	sendError();
 }
 
-// Pebble.addEventListener("ready", function(e) {
-// 	console.log("ready");
-// 	updateWeather();
-// });
+function autoconfigReady(e){
+	console.log("autoconfigReady");
+	updateWeather();
+}
+
+function autoconfigShowConfiguration(e){
+	console.log("autoconfigShowConfiguration");
+}
+
+function autoconfigWebviewclosed(e){
+	console.log("autoconfigWebviewclosed");
+	updateWeather();
+}
 
 Pebble.addEventListener("appmessage", function(e) {
 	updateWeather();
