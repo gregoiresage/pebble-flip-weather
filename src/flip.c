@@ -232,10 +232,9 @@ static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
     flip_layer_animate_to(layer_number[0], tick_time->tm_hour % 12 == 0 ? 12 : tick_time->tm_hour % 12);
   }
   
-  // flip_layer_animate_to(layer_number[1], tick_time->tm_min);
+  flip_layer_animate_to(layer_number[1], tick_time->tm_min);
   snprintf(date_text, sizeof(date_text), "%s %d", MONTHS[getLanguage()][tick_time->tm_mon],tick_time->tm_mday);
 
-  // strftime(date_text, sizeof(date_text), "%s %e", MONTHS[getLanguage()][tick_time->tm],tick_time);
   layer_mark_dirty(text_layer_get_layer(text_date_layer));
 }
 
