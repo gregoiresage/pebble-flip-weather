@@ -19,7 +19,8 @@
 
     "language": 10,
     "units": 11,
-    "interval": 12
+    "interval": 12,
+    "hourly_vibration": 13
   },
   "resources": {
     "media": [
@@ -214,6 +215,14 @@
         "min": 15,
         "max": 180,
         "default": 30
+      },
+      {
+        "name": "hourly_vibration",
+        "title": "Vibrate every hour",
+        "type": "boolean",
+        "off-text": "Off",
+        "on-text": "On",
+        "default": false
       }
     ]
   }

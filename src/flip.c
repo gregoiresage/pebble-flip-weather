@@ -236,6 +236,8 @@ static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
   snprintf(date_text, sizeof(date_text), "%s %d", MONTHS[getLanguage()][tick_time->tm_mon],tick_time->tm_mday);
 
   layer_mark_dirty(text_layer_get_layer(text_date_layer));
+
+  if (units_changed & HOUR_UNIT && getHourly_vibration()) vibes_double_pulse();
 }
 
 static void battery_state_handler(BatteryChargeState charge) {
